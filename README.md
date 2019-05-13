@@ -3,8 +3,6 @@ a nice bot 4 u.
 - `MASTODON_TOKEN`: a Mastodon user API token
 - `MASTODON_SERVER`: the instance to which API calls should be made (usually
   where the bot user lives.) (default: https://mastodon.social)
-- `DATA_DIR`: the directory in which to search for image data.
-  (default: 'persist')
 - `CRON_RULE`: the interval between each post, in crontab format. (default:
   every four hours)
 
