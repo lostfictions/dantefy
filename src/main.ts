@@ -3,10 +3,14 @@ require("source-map-support").install();
 import { scheduleJob } from "node-schedule";
 import { twoot, Configs as TwootConfigs } from "twoot";
 
-import { makeLimeguy } from "./limeguy";
-import pluralize from "./util/pluralize";
+import { dantefy } from "./dantefy";
 
 import { MASTODON_SERVER, MASTODON_TOKEN, CRON_RULE } from "./env";
+
+const TWOOT_TEXT = "Featuring Dante From The Devil May Cry™ Series";
+
+const TEST_URL =
+  "https://upload.wikimedia.org/wikipedia/commons/5/54/Krzywik.jpg";
 
 const twootConfigs: TwootConfigs = [
   {
@@ -16,13 +20,9 @@ const twootConfigs: TwootConfigs = [
 ];
 
 async function doTwoot(): Promise<void> {
-  const { filename, item } = await makeLimeguy();
+  const filename = await dantefy({ url: TEST_URL });
   try {
-    const urls = await twoot(
-      twootConfigs,
-      `why cant I, hold all these ${pluralize(item)}?`,
-      [filename]
-    );
+    const urls = await twoot(twootConfigs, TWOOT_TEXT, [filename]);
     for (const url of urls) {
       console.log(`twooted at '${url}'!`);
     }
@@ -35,10 +35,8 @@ const argv = process.argv.slice(2);
 
 if (argv.includes("local")) {
   const localJob = () =>
-    makeLimeguy().then(async ({ filename, item }) => {
-      console.log(
-        `why cant I, hold all these ${pluralize(item)}? file://${filename}\n`
-      );
+    dantefy({ url: TEST_URL }).then(async filename => {
+      console.log(`${TWOOT_TEXT} file://${filename}\n`);
       if (!argv.includes("once")) {
         setTimeout(localJob, 5000);
       }
