@@ -1,66 +1,63 @@
 require("source-map-support").install();
 
-import { scheduleJob } from "node-schedule";
-import { twoot, Configs as TwootConfigs } from "twoot";
-
+import { createReadStream } from "fs";
+import Masto, { Status } from "masto";
 import { dantefy } from "./dantefy";
-
-import { MASTODON_SERVER, MASTODON_TOKEN, CRON_RULE } from "./env";
+import { MASTODON_SERVER, MASTODON_TOKEN } from "./env";
 
 const TWOOT_TEXT = "featuring Dante from the Devil May Cry™ Series";
 
-// FIXME
-const TEST_URL =
-  "https://upload.wikimedia.org/wikipedia/commons/5/54/Krzywik.jpg";
+console.log(`[${new Date().toUTCString()}] Running in production mode!`);
 
-const twootConfigs: TwootConfigs = [
-  {
-    token: MASTODON_TOKEN,
-    server: MASTODON_SERVER
-  }
-];
+(async () => {
+  const masto = await Masto.login({
+    uri: MASTODON_SERVER,
+    accessToken: MASTODON_TOKEN
+  });
 
-async function doTwoot(): Promise<void> {
-  const filename = await dantefy({ url: TEST_URL });
-  try {
-    const urls = await twoot(twootConfigs, TWOOT_TEXT, [filename]);
-    for (const url of urls) {
-      console.log(`twooted at '${url}'!`);
+  const ownAccount = await masto.verifyCredentials();
+
+  const userEvents = await masto.streamUser();
+  userEvents.on("notification", async notification => {
+    if (notification.type !== "mention") return;
+
+    if (
+      notification.status &&
+      notification.status.media_attachments.length > 0
+    ) {
+      const mediaPromises = notification.status.media_attachments
+        .slice(0, 4)
+        .map(attachment =>
+          dantefy({
+            url: attachment.url
+          }).then(filename =>
+            masto.uploadMediaAttachment({
+              file: createReadStream(filename)
+            })
+          )
+        );
+
+      const accountsToMention = notification.status.mentions
+        .map(mention => mention.acct)
+        .filter(acct => acct !== ownAccount.acct)
+        .concat(notification.status.account.acct)
+        .map(acct => `@${acct}`)
+        .join(" ");
+
+      const statusText = `${accountsToMention} ${TWOOT_TEXT}`;
+
+      const mediaObjects = await Promise.all(mediaPromises);
+
+      const status = (await masto.createStatus({
+        in_reply_to_id: notification.status.id,
+        status: statusText,
+        visibility: notification.status.visibility,
+        media_ids: mediaObjects.map(m => m.id)
+      })) as Status;
+
+      console.log(`${statusText}\n${status.uri}\n`);
     }
-  } catch (e) {
-    console.error("error while trying to twoot: ", e);
-  }
-}
+  });
 
-const argv = process.argv.slice(2);
-
-if (argv.includes("local")) {
-  const localJob = () =>
-    dantefy({ url: TEST_URL }).then(async filename => {
-      console.log(`${TWOOT_TEXT} file://${filename}\n`);
-      // if (!argv.includes("once")) {
-      //   setTimeout(localJob, 5000);
-      // }
-    });
-
-  localJob();
-  console.log("Running locally!");
-} else {
-  // we're running in production mode!
-  if (argv.includes("once")) {
-    console.log("Running single iteration!");
-    doTwoot().then(() => console.log("Done."));
-  } else {
-    const job = scheduleJob(CRON_RULE, () => {
-      doTwoot().then(() => {
-        setTimeout(() => {
-          const next = (job.nextInvocation() as any).toDate().toUTCString(); // bad typings
-          console.log(`Next job scheduled for [${next}]`);
-        });
-      });
-    });
-    const now = new Date(Date.now()).toUTCString();
-    const next = (job.nextInvocation() as any).toDate().toUTCString(); // bad typings
-    console.log(`[${now}] Bot is running! Next job scheduled for [${next}]`);
-  }
-}
+  console.log(`[${new Date().toUTCString()}] Listening for mentions!`);
+})();
