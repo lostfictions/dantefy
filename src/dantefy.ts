@@ -10,11 +10,15 @@ const staticDataDir = path.join(__dirname, "../data");
 
 const OUT_DIR = tmpdir();
 
+/** The output image will be constrained to be at most this wide/tall. */
+const MAX_WIDTH_OR_HEIGHT = 800;
+
+/** What proportion of the image should the badge take up? */
+const BADGE_SIZE_ON_IMAGE = 0.25;
+
 let filenameIndex = 0;
 
 let featuringDante: ImageBitmap;
-
-const maxHeight = 800;
 
 export async function dantefy({ url }: { url: string }): Promise<string> {
   if (!featuringDante) {
@@ -24,24 +28,29 @@ export async function dantefy({ url }: { url: string }): Promise<string> {
   }
   const image = await loadRemoteImage(url);
 
-  const canvasAspect = image.width / image.height;
+  const [canvasWidth, canvasHeight] = getConstrainedProportions(
+    image.width,
+    image.height,
+    MAX_WIDTH_OR_HEIGHT
+  );
 
-  const canvas = createCanvas(maxHeight * canvasAspect, maxHeight);
+  const canvas = createCanvas(canvasWidth, canvasHeight);
   const ctx = canvas.getContext("2d")!;
 
-  ctx.drawImage(image, 0, 0, maxHeight * canvasAspect, maxHeight);
+  ctx.drawImage(image, 0, 0, canvasWidth, canvasHeight);
 
-  const aspect = image.width / image.height;
-  const scale = maxHeight / featuringDante.height;
-  const size = 250 * scale;
+  const [badgeWidth, badgeHeight] = getConstrainedProportions(
+    featuringDante.width,
+    featuringDante.height,
+    Math.max(canvasWidth, canvasHeight) * BADGE_SIZE_ON_IMAGE
+  );
 
-  // FIXME
   ctx.drawImage(
     featuringDante,
-    50 - (size * aspect) / 2,
-    50 - size / 2,
-    size * aspect,
-    size
+    canvasWidth - badgeWidth,
+    canvasHeight - badgeHeight,
+    badgeWidth,
+    badgeHeight
   );
 
   filenameIndex += 1;
@@ -55,4 +64,19 @@ export async function dantefy({ url }: { url: string }): Promise<string> {
     outStream.on("finish", () => res(filename));
     outStream.on("error", e => rej(e));
   });
+}
+
+function getConstrainedProportions(
+  width: number,
+  height: number,
+  max: number
+): [number, number] {
+  const imageMax = Math.max(width, height);
+
+  if (imageMax < max) return [width, height];
+
+  if (imageMax === width) {
+    return [max, height * (max / imageMax)];
+  }
+  return [width * (max / imageMax), max];
 }

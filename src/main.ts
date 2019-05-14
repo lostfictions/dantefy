@@ -9,6 +9,7 @@ import { MASTODON_SERVER, MASTODON_TOKEN, CRON_RULE } from "./env";
 
 const TWOOT_TEXT = "Featuring Dante From The Devil May Cry™ Series";
 
+// FIXME
 const TEST_URL =
   "https://upload.wikimedia.org/wikipedia/commons/5/54/Krzywik.jpg";
 
@@ -37,9 +38,9 @@ if (argv.includes("local")) {
   const localJob = () =>
     dantefy({ url: TEST_URL }).then(async filename => {
       console.log(`${TWOOT_TEXT} file://${filename}\n`);
-      if (!argv.includes("once")) {
-        setTimeout(localJob, 5000);
-      }
+      // if (!argv.includes("once")) {
+      //   setTimeout(localJob, 5000);
+      // }
     });
 
   localJob();
