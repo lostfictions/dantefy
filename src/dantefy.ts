@@ -18,11 +18,11 @@ const BADGE_SIZE_ON_IMAGE = 0.25;
 
 let filenameIndex = 0;
 
-let featuringDante: ImageBitmap;
+let danteBadge: ImageBitmap;
 
 export async function dantefy({ url }: { url: string }): Promise<string> {
-  if (!featuringDante) {
-    featuringDante = await loadImage(
+  if (!danteBadge) {
+    danteBadge = await loadImage(
       path.join(staticDataDir, "featuring_dante.png")
     );
   }
@@ -40,15 +40,15 @@ export async function dantefy({ url }: { url: string }): Promise<string> {
   ctx.drawImage(image, 0, 0, canvasWidth, canvasHeight);
 
   const [badgeWidth, badgeHeight] = getConstrainedProportions(
-    featuringDante.width,
-    featuringDante.height,
+    danteBadge.width,
+    danteBadge.height,
     Math.max(canvasWidth, canvasHeight) * BADGE_SIZE_ON_IMAGE
   );
 
   ctx.drawImage(
-    featuringDante,
-    canvasWidth - badgeWidth,
-    canvasHeight - badgeHeight,
+    danteBadge,
+    canvasWidth * 0.98 - badgeWidth, // inset badge from edge of image by 2%
+    canvasHeight * 0.98 - badgeHeight,
     badgeWidth,
     badgeHeight
   );

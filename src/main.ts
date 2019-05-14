@@ -7,7 +7,7 @@ import { dantefy } from "./dantefy";
 
 import { MASTODON_SERVER, MASTODON_TOKEN, CRON_RULE } from "./env";
 
-const TWOOT_TEXT = "Featuring Dante From The Devil May Cry™ Series";
+const TWOOT_TEXT = "featuring Dante from the Devil May Cry™ Series";
 
 // FIXME
 const TEST_URL =
