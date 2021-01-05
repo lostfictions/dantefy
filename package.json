@@ -15,7 +15,7 @@
   "author": "s <https://github.com/lostfictions>",
   "license": "AGPL-3.0",
   "dependencies": {
-    "axios": "^0.18.0",
+    "axios": "^0.21.1",
     "canvas": "^2.5.0",
     "envalid": "^5.0.0",
     "masto": "^2.0.2",
